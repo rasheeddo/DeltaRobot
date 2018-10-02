@@ -78,6 +78,37 @@ def map(val, in_min, in_max, out_min, out_max):
 
     return (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
+def SetOperatingMode(MODE):
+
+    TorqueOff()
+
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_OPERATING_MODE, MODE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_OPERATING_MODE, MODE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_OPERATING_MODE, MODE)
+
+    present_mode, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_OPERATING_MODE)
+    if present_mode == 0:
+        # Current (Torque) Control Mode
+        print("Now Operating Mode is Torque Control")
+    elif present_mode == 3:
+        # Position Control Mode
+        print("Now Operating Mode is Position Control")
+    elif present_mode == 5:
+        # Current-based Position Control Mode
+        print("Now Operating Mode is Current-based Position Control")
+    else:
+        print("In other Mode that didn't set!")
+
+def SetGoalCurrent(SetCur):
+
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_GOAL_CURRENT, SetCur)
+    if dxl_comm_result != COMM_SUCCESS:
+        print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
+    elif dxl_error != 0:
+        print("%s" % packetHandler.getRxPacketError(dxl_error))
+    else:
+        print("Goal Current is set")
+
 def DeltaGoHome():
     pos1 = 90
     pos2 = 90
@@ -444,7 +475,7 @@ def XYZOutRange(x,y,z):
     return WarningFlag
 
 
-def ServoDrive(ServoDeg1,ServoDeg2,ServoDeg3):
+def RunServo(ServoDeg1,ServoDeg2,ServoDeg3):
 
     ServoDeg1 = 90 + ServoDeg1  # +90 to compensate the mechanical offset setting
     ServoDeg2 = 90 + ServoDeg2
@@ -469,7 +500,7 @@ def ServoDrive(ServoDeg1,ServoDeg2,ServoDeg3):
     else:
         print("ERROR: servo angle is less than 40deg")
 
-def readAngle():
+def ReadAngle():
     dxl_present_position1, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_PRESENT_POSITION)
     dxl_present_position2, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_PRESENT_POSITION)
     dxl_present_position3, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_PRESENT_POSITION)
@@ -499,6 +530,367 @@ def GripperOpen():
     dxl_comm_result4, dxl_error4 = packetHandler.write4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_GOAL_POSITION, dxl4_goal_position)
     print("Gripper Opened")
 
+def IsMoving1():
+    Moving1, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_MOVING)
+    return Moving1
+
+def IsMoving2():
+    Moving2, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_MOVING)
+    return Moving2
+
+def IsMoving3():
+    Moving3, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_MOVING)
+    return Moving3
+
+def MovingStatus1():
+    MovingStat1, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_MOVING_STATUS)
+    
+    if MovingStat1 > 48:
+        print("Motor1 is in Trapezodal Profile")
+    elif MovingStat1 < 35 and MovingStat1 > 20:
+        print("Motor1 is in Triangular Profile")
+    elif MovingStat1 < 20 and MovingStat1 > 3:
+        print("Motor1 is in Rectangular Profile")
+    elif MovingStat1 < 3:
+        print("Motor1 is in Step Mode (No Profile)")
+    else:
+        print("UNKNOWN Profile...")
+
+    return MovingStat1
+
+def MovingStatus2():
+    MovingStat2, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_MOVING_STATUS)
+    
+    if MovingStat2 > 48:
+        print("Motor2 is in Trapezodal Profile")
+    elif MovingStat2 < 35 and MovingStat2 > 20:
+        print("Motor2 is in Triangular Profile")
+    elif MovingStat2 < 20 and MovingStat2 > 3:
+        print("Motor2 is in Rectangular Profile")
+    elif MovingStat2 < 3:
+        print("Motor2 is in Step Mode (No Profile)")
+    else:
+        print("UNKNOWN Profile...")
+
+    return MovingStat2
+
+def MovingStatus3():
+    MovingStat3, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_MOVING_STATUS)
+    
+    if MovingStat3 > 48:
+        print("Motor3 is in Trapezodal Profile")
+    elif MovingStat3 < 35 and MovingStat3 > 20:
+        print("Motor3 is in Triangular Profile")
+    elif MovingStat3 < 20 and MovingStat3 > 3:
+        print("Motor3 is in Rectangular Profile")
+    elif MovingStat3 < 3:
+        print("Motor3 is in Step Mode (No Profile)")
+    else:
+        print("UNKNOWN Profile...")
+
+    return MovingStat3 
+
+def TorqueOn():
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
+   
+def TorqueOff():
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
+
+def DeltaPos(pre_pos,goal_pos):
+    if pre_pos > 360 or goal_pos > 360:
+        print("Input position is over than 360!")
+        return 0
+    else:
+        pre_pos_pul = map(pre_pos,0.0,360.0,0.0,4095.0)
+        pre_pos_pul = int(pre_pos_pul)
+        goal_pos_pul = map(goal_pos,0.0,360.0,0.0,4095.0)
+        goal_pos_pul = int(goal_pos_pul)
+
+        delta_pos = abs(goal_pos_pul - pre_pos_pul)
+
+        return delta_pos
+
+def SetProfile1(set_V_PRFL,set_A_PRFL):
+    ######################### Set Velocity / Acceleration Profile  ##############################
+    set_A_Limit = 32767     # 32767 default                [214.577 rev/min^2]
+    set_V_Limit = 500       # 350 Default                  [0.229RPM]
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
+
+    acceleration_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_ACCELERATION_LIMIT)
+    velocity_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_VELOCITY_LIMIT)
+
+    print("V PRFL 1: %d" %set_V_PRFL)
+    print("A PRFL 1: %d" %set_A_PRFL)
+    print("--------------------------------")
+
+def SetProfile2(set_V_PRFL,set_A_PRFL):
+    ######################### Set Velocity / Acceleration Profile  ##############################
+    set_A_Limit = 32767     # 32767 default                [214.577 rev/min^2]
+    set_V_Limit = 500       # 350 Default                  [0.229RPM]
+
+    #set_A_PRFL = 30      # between 0 ~ set_A_limit      [214.577 rev/min^2]
+    #set_V_PRFL = 200      # between 0 ~ set_V_Limit      [0.229RPM]
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
+
+    acceleration_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_ACCELERATION_LIMIT)
+    velocity_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_VELOCITY_LIMIT)
+
+    print("V PRFL 2: %d" %set_V_PRFL)
+    print("A PRFL 2: %d" %set_A_PRFL)
+    print("--------------------------------") 
+
+def SetProfile3(set_V_PRFL,set_A_PRFL):
+    ######################### Set Velocity / Acceleration Profile  ##############################
+    set_A_Limit = 32767     # 32767 default                [214.577 rev/min^2]
+    set_V_Limit = 500       # 350 Default                  [0.229RPM]
+
+    #set_A_PRFL = 30      # between 0 ~ set_A_limit      [214.577 rev/min^2]
+    #set_V_PRFL = 200      # between 0 ~ set_V_Limit      [0.229RPM]
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
+
+    acceleration_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_ACCELERATION_LIMIT)
+    velocity_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_VELOCITY_LIMIT)
+
+    print("V PRFL 3: %d" %set_V_PRFL)
+    print("A PRFL 3: %d" %set_A_PRFL)
+    print("--------------------------------")    
+
+def SetProfile4(set_V_PRFL,set_A_PRFL):
+    ######################### Set Velocity / Acceleration Profile  ##############################
+    set_A_Limit = 32767     # 32767 default                [214.577 rev/min^2]
+    set_V_Limit = 500       # 350 Default                  [0.229RPM]
+
+    #set_A_PRFL = 30      # between 0 ~ set_A_limit      [214.577 rev/min^2]
+    #set_V_PRFL = 200      # between 0 ~ set_V_Limit      [0.229RPM]
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
+
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
+    dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
+
+    acceleration_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_ACCELERATION_LIMIT)
+    velocity_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_VELOCITY_LIMIT)
+
+    print("V PRFL 4: %d" %set_V_PRFL)
+    print("A PRFL 4: %d" %set_A_PRFL)
+    print("--------------------------------")
+
+def SetPID1(set_P_Gain,set_I_Gain,set_D_Gain):
+    
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)
+    
+    position_D_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_D_GAIN)
+    position_I_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_I_GAIN)
+    position_P_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_P_GAIN)
+
+    print("Position P Gain 1: %d" %position_P_gain)
+    print("Position I Gain 1: %d" %position_I_gain)
+    print("Position D Gain 1: %d" %position_D_gain)
+    print("------------------------------")
+
+def SetPID2(set_P_Gain,set_I_Gain,set_D_Gain):
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)
+
+    position_D_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_D_GAIN)
+    position_I_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_I_GAIN)
+    position_P_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_P_GAIN)
+
+    print("Position P Gain 2: %d" %position_P_gain)
+    print("Position I Gain 2: %d" %position_I_gain)
+    print("Position D Gain 2: %d" %position_D_gain)
+    print("------------------------------")
+
+def SetPID3(set_P_Gain,set_I_Gain,set_D_Gain):
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)
+
+    position_D_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_D_GAIN)
+    position_I_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_I_GAIN)
+    position_P_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_P_GAIN)
+
+    print("Position P Gain 3: %d" %position_P_gain)
+    print("Position I Gain 3: %d" %position_I_gain)
+    print("Position D Gain 3: %d" %position_D_gain)
+    print("------------------------------")
+
+def SetPID4(set_P_Gain,set_I_Gain,set_D_Gain):
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)    
+
+    position_D_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_POSITION_D_GAIN)
+    position_I_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_POSITION_I_GAIN)
+    position_P_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_POSITION_P_GAIN)
+
+    print("Position P Gain 4: %d" %position_P_gain)
+    print("Position I Gain 4: %d" %position_I_gain)
+    print("Position D Gain 4: %d" %position_D_gain)
+    print("------------------------------")
+
+def SetFFGain1(set_FF1_Gain,set_FF2_Gain):
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_FEEDFORWARD_1st_GAIN, set_FF1_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_FEEDFORWARD_2nd_GAIN, set_FF2_Gain)
+
+    FF1_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_FEEDFORWARD_1st_GAIN)
+    FF2_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_FEEDFORWARD_2nd_GAIN)
+
+    print("Feedforward 1st Gain 1: %d" %FF1_gain)
+    print("Feedforward 2nd Gain 1: %d" %FF2_gain)
+    print("------------------------------") 
+
+def SetFFGain2(set_FF1_Gain,set_FF2_Gain):
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_FEEDFORWARD_1st_GAIN, set_FF1_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_FEEDFORWARD_2nd_GAIN, set_FF2_Gain)
+
+    FF1_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_FEEDFORWARD_1st_GAIN)
+    FF2_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_FEEDFORWARD_2nd_GAIN)
+
+    print("Feedforward 1st Gain 2: %d" %FF1_gain)
+    print("Feedforward 2nd Gain 2: %d" %FF2_gain)
+    print("------------------------------")
+
+def SetFFGain3(set_FF1_Gain,set_FF2_Gain):
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_FEEDFORWARD_1st_GAIN, set_FF1_Gain)
+    dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_FEEDFORWARD_2nd_GAIN, set_FF2_Gain)
+
+    FF1_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_FEEDFORWARD_1st_GAIN)
+    FF2_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_FEEDFORWARD_2nd_GAIN)
+
+    print("Feedforward 1st Gain 3: %d" %FF1_gain)
+    print("Feedforward 2nd Gain 3: %d" %FF2_gain)
+    print("------------------------------")
+
+def TrajectoryGenerationDelta(Vstd,Astd,DelPos1,DelPos2,DelPos3):
+    DelPos = [DelPos1, DelPos2, DelPos3]
+    MIN = min(DelPos)
+    MAX = max(DelPos)
+    V_Lim = 180
+    A_Lim = 60
+
+    ## If no travel distance for every servos, return a slow speed profile
+    if DelPos1 <= 1 and DelPos2 <= 1 and DelPos3 <= 1:
+        V1 = 20
+        A1 = 5
+        V2 = 20
+        A2 = 5
+        V3 = 20
+        A3 = 5
+        print("Low travel distance...")
+        return V1, A1, V2, A2, V3, A3
+    ## If V and A input are over the limit
+    if Vstd >= V_Lim or Astd >= A_Lim:
+        
+        Vstd = V_Lim
+        Astd = A_Lim
+        
+        print("Standard Velocity is over the limit!")
+    
+    if DelPos1 == MAX:
+        V1 = Vstd
+        A1 = Astd
+        print("Servo1 is the standard")
+        t3_1 = 64.0*V1/A1 + 64.0*DelPos1/V1
+        t1_std = 64*Vstd/Astd
+        t3_tri = 2*t1_std
+        t2_1 = 64.0*DelPos1/V1
+        t3_std = t3_1
+        t2_std = t2_1
+        print("t1_std: %f" %t1_std)
+        print("t3: %f" %t3_std)
+        print("t3_tri: %f" %t3_tri)
+        print("DelPos1: %f" %DelPos1)
+        print("DelPos2: %f" %DelPos2)
+        print("DelPos3: %f" %DelPos3)
+        t3_2 = t3_std
+        t3_3 = t3_std
+        t2_2 = t2_std
+        t2_3 = t2_std
+        den_std = (t3_std - t2_std)
+        V2 = 64.0*DelPos2/t2_2
+        V3 = 64.0*DelPos3/t2_3
+        A2 = 64*V2 / den_std
+        A3 = 64*V3 / den_std
+        
+    elif DelPos2 == MAX:
+        V2 = Vstd
+        A2 = Astd
+        print("Servo2 is the standard")
+        t3_2 = 64.0*V2/A2 + 64.0*DelPos2/V2
+        t1_std = 64*Vstd/Astd
+        t3_tri = 2*t1_std
+        t2_2 = 64.0*DelPos2/V2
+        t3_std = t3_2
+        t2_std = t2_2
+        print("t1_std: %f" %t1_std)
+        print("t3: %f" %t3_std)
+        print("t3_tri: %f" %t3_tri)
+        print("DelPos1: %f" %DelPos1)
+        print("DelPos2: %f" %DelPos2)
+        print("DelPos3: %f" %DelPos3)
+        t3_1 = t3_std
+        t3_3 = t3_std  
+        t2_1 = t2_std
+        t2_3 = t2_std
+        den_std = (t3_std - t2_std)       
+        V1 = 64.0*DelPos1/t2_1
+        V3 = 64.0*DelPos3/t2_3
+        A1 = 64*V1 / den_std
+        A3 = 64*V3 / den_std
+
+    elif DelPos3 == MAX:
+        V3 = Vstd
+        A3 = Astd
+        print("Servo3 is the standard")
+        t3_3 = 64.0*V3/A3 + 64.0*DelPos3/V3
+        t1_std = 64*Vstd/Astd
+        t3_tri = 2*t1_std
+        t2_3 = 64.0*DelPos3/V3
+        t3_std = t3_3
+        t2_std = t2_3
+        print("t1_std: %f" %t1_std)
+        print("t3: %f" %t3_std)
+        print("t3_tri: %f" %t3_tri)
+        print("DelPos1: %f" %DelPos1)
+        print("DelPos2: %f" %DelPos2)
+        print("DelPos3: %f" %DelPos3)
+        t3_1 = t3_std
+        t3_2 = t3_std
+        t2_1 = t2_std
+        t2_2 = t2_std
+        den_std = (t3_std - t2_std)       
+        V1 = 64.0*DelPos1/t2_1
+        V2 = 64.0*DelPos2/t2_2
+        A1 = 64*V1 / den_std
+        A2 = 64*V2 / den_std
+
+    return V1, A1, V2, A2, V3, A3
 
 
 ####################################################### Set Servo Configuration #############################################################
@@ -523,8 +915,11 @@ ADDR_PRO_PROFILE_VELOCITY   = 112
 ADDR_PRO_POSITION_D_GAIN    = 80
 ADDR_PRO_POSITION_I_GAIN    = 82
 ADDR_PRO_POSITION_P_GAIN    = 84
+ADDR_PRO_FEEDFORWARD_2nd_GAIN = 88
+ADDR_PRO_FEEDFORWARD_1st_GAIN = 90
 
 ADDR_PRO_MOVING             = 122
+ADDR_PRO_MOVING_STATUS       = 123
 
 CURRENT_CONTROL                     = 0
 POSITION_CONTROL                    = 3 # Default
@@ -572,165 +967,30 @@ else:
     getch()
     quit()
 
-'''
-# When need to change mode just remove block comment out
-# Disable Dynamixel Torque 1
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-else:
-    print("Dynamixel 1 has been successfully connected")
-# Disable Dynamixel Torque 2   
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-else:
-    print("Dynamixel 2 has been successfully connected")
-# Disable Dynamixel Torque 3
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-else:
-    print("Dynamixel 3 has been successfully connected")
-# Disable Dynamixel Torque 4
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-else:
-    print("Dynamixel 4 has been successfully connected")
+################ Initialize ###################
+#TorqueOff()
+#SetOperatingMode(POSITION_CONTROL)
+### PID Set ###
+SetPID1(2000,1000,4700)
+SetPID2(2000,1000,4700)
+SetPID3(2000,1000,4700)
+### Feedforward Set ###
+FF1_Gain1 = 100
+FF2_Gain1 = 50
+SetFFGain1(FF1_Gain1,FF2_Gain1)
+FF1_Gain2 = 100
+FF2_Gain2 = 50
+SetFFGain2(FF1_Gain2,FF2_Gain2)
+FF1_Gain3 = 100
+FF2_Gain3 = 50
+SetFFGain3(FF1_Gain3,FF2_Gain3)
+### Goal Current Set ###
+SetGoalCurrent(150)
+TorqueOn()
 
-    # Check Operating Mode
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_OPERATING_MODE, POSITION_CONTROL)
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_OPERATING_MODE, POSITION_CONTROL)
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_OPERATING_MODE, POSITION_CONTROL)
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_OPERATING_MODE, CURRENT_BASED_POSITION_CONTROL)
-
-present_mode, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_OPERATING_MODE)
-if present_mode == 0:
-    # Current (Torque) Control Mode
-    print("Now Operating Mode is Torque Control")
-elif present_mode == 3:
-    # Position Control Mode
-    print("Now Operating Mode is Position Control")
-elif present_mode == 5:
-    # Current-based Position Control Mode
-    print("Now Operating Mode is Current-based Position Control")
-else:
-    print("In other Mode that didn't set!")
-
-present_mode2, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_OPERATING_MODE)
-if present_mode2 == 0:
-    # Current (Torque) Control Mode
-    print("Now Operating Mode is Torque Control")
-elif present_mode2 == 3:
-    # Position Control Mode
-    print("Now Operating Mode is Position Control")
-elif present_mode2 == 5:
-    # Current-based Position Control Mode
-    print("Now Operating Mode is Current-based Position Control")
-else:
-    print("In other Mode that didn't set!")
-'''
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
-
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-else:
-    print("Torque is enable")
-######################### Set Velocity / Acceleration Profile  ##############################
-set_A_Limit = 32767     # 32767 default                [214.577 rev/min^2]
-set_V_Limit = 350       # 350 Default                  [0.229RPM]
-
-final_pos = 90.0          # deg
-#t3 = 3.0                  # second
-#t1 = t3/3              # second
-#t2 = 2*t1               # second
-
-#dxl_present_position, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_PRESENT_POSITION)
-#start_pos = map(dxl_present_position,0.0,4095.0,0.0,360.0)
-#start_pos = 0
-#delta_pos = final_pos - start_pos       # deg.
-#delta_pos_rev = delta_pos/360.0           # Rev
-#set_V_PRFL = (64.0*delta_pos)/(t2*100)     # Rev/Min
-#set_A_PRFL = (64.0*set_V_PRFL)/(t1*100)    # Rev/Min^2
-
-set_A_PRFL = 20      # between 0 ~ set_A_limit      [214.577 rev/min^2]
-set_V_PRFL = 80       # between 0 ~ set_V_Limit      [0.229RPM]
-
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_ACCELERATION_LIMIT, set_A_Limit)
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_VELOCITY_LIMIT, set_V_Limit)
-
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_PROFILE_ACCELERATION, int(set_A_PRFL))
-dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_PROFILE_VELOCITY, int(set_V_PRFL))
-
-
-
-acceleration_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_ACCELERATION_LIMIT)
-velocity_limit, dxl_comm_result, dxl_error = packetHandler.read4ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_VELOCITY_LIMIT)
-#print("Initial Position: %f" %start_pos)
-#print("Final Position: %f" %final_pos)
-#print("Travel time: %d" %t3)
-print("V PRFL: %f" %set_V_PRFL)
-print("A PRFL: %f" %set_A_PRFL)
-print("Acceleration Limited: %d" %acceleration_limit)
-print("Velocity Limited: %d" %velocity_limit)
-print("--------------------------------")
-
-######################### Set PID Gain Position Loop  ##############################
-set_P_Gain = 2000    #800 default
-set_I_Gain = 20     #0 default
-set_D_Gain = 2000   #4700 default
-
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL2_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_P_GAIN, set_P_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_I_GAIN, set_I_Gain)
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL3_ID, ADDR_PRO_POSITION_D_GAIN, set_D_Gain)
-print("PID's Gain are set")
-
-position_D_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_D_GAIN)
-position_I_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_I_GAIN)
-position_P_gain, dxl_comm_result, dxl_error = packetHandler.read2ByteTxRx(portHandler, DXL1_ID, ADDR_PRO_POSITION_P_GAIN)
-
-print("Position D Gain: %d" %position_D_gain)
-print("Position I Gain: %d" %position_I_gain)
-print("Position P Gain: %d" %position_P_gain)
-print("--------------------------------")
-
-######################### Set Goal Current  ##############################
-SetCur = 150
-dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, DXL4_ID, ADDR_PRO_GOAL_CURRENT, SetCur)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-else:
-    print("Goal Current is set")
+SetProfile1(60,15)
+SetProfile2(60,15)
+SetProfile3(60,15)
 
 
 ################################################################################################################################
@@ -758,13 +1018,14 @@ Buttons = getButton()
 Z_Btn = Buttons[1] #B
 X_Btn = Buttons[2] #X
 Y_Btn = Buttons[3] #Y
-GripClose_Btn = Buttons[4] #LB
-GripOpen_Btn = Buttons[5] #RB
-BackHome_Btn = Buttons[6] #Back
+Back_Btn = Buttons[6] #Back
 Start_Btn = Buttons[7] #Start
-Exit_Btn = Buttons[8] #Logiccool
+Continue_Btn = Buttons[8] #Logiccool
+GripOpen_Btn = Buttons[9] # Analog Left Push
+GripClose_Btn = Buttons[10] #Analog Right Push
 
-LinearIncrement = 30
+
+LinearIncrement = 50
 
 ################## Go to stand by position before starting  ###########################
 
@@ -803,44 +1064,49 @@ while startJog:
     Z_Btn = Buttons[1] #B
     X_Btn = Buttons[2] #X
     Y_Btn = Buttons[3] #Y
-    GripClose_Btn = Buttons[4] #LB
-    GripOpen_Btn = Buttons[5] #RB
-    BackHome_Btn = Buttons[6] #Back
+    Back_Btn = Buttons[6] #Back
     Start_Btn = Buttons[7] #Start
-    Exit_Btn = Buttons[8] #Logiccool
-
-    if GripClose_Btn == 1:
-        GripperClose()
-
-    if GripOpen_Btn == 1:
-        GripperOpen()
-
+    Continue_Btn = Buttons[8] #Logiccool
+    GripOpen_Btn = Buttons[9] # Analog Left Push
+    GripClose_Btn = Buttons[10] #Analog Right Push
 
     ########## Reset Jogging and Back to home position ##################
 
-    if BackHome_Btn == 1:
+    if Continue_Btn == 1:
         DeltaGoHome()
 
     ###################### Exit the program ###########################
 
-    if Exit_Btn == 1:
+    if Back_Btn == 1:
         DeltaGoHome()
         print("----------------------------------------------------------------------------------")
         print("-----------------------Exit the Delta Robot Linear Jog Mode-----------------------")
         print("----------------------------------------------------------------------------------")
         break
 
+    if GripOpen_Btn == 1:
+        GripperOpen()
+        time.sleep(0.5)
+
+    if GripClose_Btn == 1:
+        GripperClose()
+        time.sleep(0.5)
+
+
     ################### Move in X direction #####################
     OnceTrig = True
     while X_Btn == 1:
-        Hats = getHat()
+        #Hats = getHat()
         Buttons = getButton()
         X_Btn = Buttons[2] #X
-        JogDirX = Hats[0] # Normal = 0, LeftDir Pressed = -1, RightDir Pressed = 1
+        #JogDirX = Hats[0] # Normal = 0, LeftDir Pressed = -1, RightDir Pressed = 1
+        Axes = getAxis()
+        Ax0 = Axes[0]       #Analog left push right = +1,  Analog left push left = -1
+        #Ax1 = Axes[1]       #Analog left push down = +1,  Analog left push up = -1
         
         if OnceTrig == True:
             # make a constant value of Y and Z before jogging because these value don't change anyway
-            PreReadDeg = readAngle()
+            PreReadDeg = ReadAngle()
             PreDeg1 = PreReadDeg[0]
             PreDeg2 = PreReadDeg[1]
             PreDeg3 = PreReadDeg[2]
@@ -850,8 +1116,8 @@ while startJog:
             OnceTrig = False # it would not come and read this if loop again until release X_Btn
         
 
-        if JogDirX == 1:
-            ReadDeg = readAngle()
+        if abs(Ax0) > 0.0001:
+            ReadDeg = ReadAngle()
             Deg1 = ReadDeg[0]
             Deg2 = ReadDeg[1]
             Deg3 = ReadDeg[2]
@@ -859,7 +1125,7 @@ while startJog:
             ReadX = ReadXYZ[0]
             #ReadY = ReadXYZ[1]
             #ReadZ = ReadXYZ[2]
-            Xcom = ReadX + LinearIncrement
+            Xcom = ReadX + (Ax0*LinearIncrement)
             Ycom = Yconst
             Zcom = Zconst
             WARN = XYZOutRange(Xcom,Ycom,Zcom)
@@ -869,42 +1135,23 @@ while startJog:
             InputDeg3 = InputDeg[2]
             
             if not WARN:
-                ServoDrive(InputDeg1,InputDeg2,InputDeg3)
-                ## If there is no warning from XYZOutrange(), so let's drive the sevo ##
-
-        elif JogDirX == -1:
-            ReadDeg = readAngle()
-            Deg1 = ReadDeg[0]
-            Deg2 = ReadDeg[1]
-            Deg3 = ReadDeg[2]
-            ReadXYZ = DeltaFWD(Deg1,Deg2,Deg3)
-            ReadX = ReadXYZ[0]
-            #ReadY = ReadXYZ[1]
-            #ReadZ = ReadXYZ[2]
-            Xcom = ReadX - LinearIncrement
-            Ycom = Yconst
-            Zcom = Zconst
-            WARN = XYZOutRange(Xcom,Ycom,Zcom)
-            InputDeg = DeltaINV(Xcom,Ycom,Zcom)
-            InputDeg1 = InputDeg[0]
-            InputDeg2 = InputDeg[1]
-            InputDeg3 = InputDeg[2]
-
-            if not WARN:
-                ServoDrive(InputDeg1,InputDeg2,InputDeg3)
+                RunServo(InputDeg1,InputDeg2,InputDeg3)
                 ## If there is no warning from XYZOutrange(), so let's drive the sevo ##
 
     ################### Move in Y direction #####################
     OnceTrig = True
     while Y_Btn == 1:
-        Hats = getHat()
+        #Hats = getHat()
         Buttons = getButton()
         Y_Btn = Buttons[3] #Y
-        JogDirYZ = Hats[1] # Normal = 0, DowDir Pressed = -1, UpDir Pressed = 1
-        
+        #JogDirYZ = Hats[1] # Normal = 0, DowDir Pressed = -1, UpDir Pressed = 1
+        Axes = getAxis()
+        #Ax0 = Axes[0]       #Analog left push right = +1,  Analog left push left = -1
+        Ax1 = Axes[1]       #Analog left push down = +1,  Analog left push up = -1 
+
         if OnceTrig == True:
             # make a constant value of Y and Z before jogging because these value don't change anyway
-            PreReadDeg = readAngle()
+            PreReadDeg = ReadAngle()
             PreDeg1 = PreReadDeg[0]
             PreDeg2 = PreReadDeg[1]
             PreDeg3 = PreReadDeg[2]
@@ -914,8 +1161,8 @@ while startJog:
             OnceTrig = False # it would not come and read this if loop again until release X_Btn
         
 
-        if JogDirYZ == 1:
-            ReadDeg = readAngle()
+        if abs(Ax1) > 0.0001:
+            ReadDeg = ReadAngle()
             Deg1 = ReadDeg[0]
             Deg2 = ReadDeg[1]
             Deg3 = ReadDeg[2]
@@ -924,7 +1171,7 @@ while startJog:
             ReadY = ReadXYZ[1]
             #ReadZ = ReadXYZ[2]
             Xcom = Xconst
-            Ycom = ReadY + LinearIncrement
+            Ycom = ReadY - (Ax1*LinearIncrement)
             Zcom = Zconst
             WARN = XYZOutRange(Xcom,Ycom,Zcom)
             InputDeg = DeltaINV(Xcom,Ycom,Zcom)
@@ -933,42 +1180,23 @@ while startJog:
             InputDeg3 = InputDeg[2]
             
             if not WARN:
-                ServoDrive(InputDeg1,InputDeg2,InputDeg3)
-                ## If there is no warning from XYZOutrange(), so let's drive the sevo ##
-
-        elif JogDirYZ == -1:
-            ReadDeg = readAngle()
-            Deg1 = ReadDeg[0]
-            Deg2 = ReadDeg[1]
-            Deg3 = ReadDeg[2]
-            ReadXYZ = DeltaFWD(Deg1,Deg2,Deg3)
-            #ReadX = ReadXYZ[0]
-            ReadY = ReadXYZ[1]
-            #ReadZ = ReadXYZ[2]
-            Xcom = Xconst
-            Ycom = ReadY - LinearIncrement
-            Zcom = Zconst
-            WARN = XYZOutRange(Xcom,Ycom,Zcom)
-            InputDeg = DeltaINV(Xcom,Ycom,Zcom)
-            InputDeg1 = InputDeg[0]
-            InputDeg2 = InputDeg[1]
-            InputDeg3 = InputDeg[2]
-            
-            if not WARN:
-                ServoDrive(InputDeg1,InputDeg2,InputDeg3)
+                RunServo(InputDeg1,InputDeg2,InputDeg3)
                 ## If there is no warning from XYZOutrange(), so let's drive the sevo ##
 
 ################### Move in Z direction #####################
     OnceTrig = True
     while Z_Btn == 1:
-        Hats = getHat()
+        #Hats = getHat()
         Buttons = getButton()
         Z_Btn = Buttons[1] #B
-        JogDirYZ = Hats[1] # Normal = 0, DowDir Pressed = -1, UpDir Pressed = 1
-        
+        #JogDirYZ = Hats[1] # Normal = 0, DowDir Pressed = -1, UpDir Pressed = 1
+        Axes = getAxis()
+        #Ax0 = Axes[0]       #Analog left push right = +1,  Analog left push left = -1
+        Ax1 = Axes[1]       #Analog left push down = +1,  Analog left push up = -1 
+
         if OnceTrig == True:
             # make a constant value of Y and Z before jogging because these value don't change anyway
-            PreReadDeg = readAngle()
+            PreReadDeg = ReadAngle()
             PreDeg1 = PreReadDeg[0]
             PreDeg2 = PreReadDeg[1]
             PreDeg3 = PreReadDeg[2]
@@ -978,8 +1206,8 @@ while startJog:
             OnceTrig = False # it would not come and read this if loop again until release X_Btn
         
 
-        if JogDirYZ == 1:
-            ReadDeg = readAngle()
+        if abs(Ax1) > 0.0001:
+            ReadDeg = ReadAngle()
             Deg1 = ReadDeg[0]
             Deg2 = ReadDeg[1]
             Deg3 = ReadDeg[2]
@@ -989,7 +1217,7 @@ while startJog:
             ReadZ = ReadXYZ[2]
             Xcom = Xconst
             Ycom = Yconst
-            Zcom = ReadZ + LinearIncrement
+            Zcom = ReadZ - (Ax1*LinearIncrement)
             WARN = XYZOutRange(Xcom,Ycom,Zcom)
             InputDeg = DeltaINV(Xcom,Ycom,Zcom)
             InputDeg1 = InputDeg[0]
@@ -997,31 +1225,8 @@ while startJog:
             InputDeg3 = InputDeg[2]
             
             if not WARN:
-                ServoDrive(InputDeg1,InputDeg2,InputDeg3)
+                RunServo(InputDeg1,InputDeg2,InputDeg3)
                 ## If there is no warning from XYZOutrange(), so let's drive the sevo ##
 
-        elif JogDirYZ == -1:
-            ReadDeg = readAngle()
-            Deg1 = ReadDeg[0]
-            Deg2 = ReadDeg[1]
-            Deg3 = ReadDeg[2]
-            ReadXYZ = DeltaFWD(Deg1,Deg2,Deg3)
-            #ReadX = ReadXYZ[0]
-            #ReadY = ReadXYZ[1]
-            ReadZ = ReadXYZ[2]
-            Xcom = Xconst
-            Ycom = Yconst
-            Zcom = ReadZ - LinearIncrement
-            WARN = XYZOutRange(Xcom,Ycom,Zcom)
-            InputDeg = DeltaINV(Xcom,Ycom,Zcom)
-            InputDeg1 = InputDeg[0]
-            InputDeg2 = InputDeg[1]
-            InputDeg3 = InputDeg[2]
-            
-            if not WARN:
-                ServoDrive(InputDeg1,InputDeg2,InputDeg3)
-                ## If there is no warning from XYZOutrange(), so let's drive the sevo ##
-
-        time.sleep(0.1)
 
 
